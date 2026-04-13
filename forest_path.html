@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mind Palace</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { overflow:hidden; background:#000510; }
+    canvas { display:block; }
+  </style>
+</head>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ─── RENDERER ─────────────────────────────────────────────────────────────────
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+// ─── SCENE ────────────────────────────────────────────────────────────────────
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000510);
+scene.fog = new THREE.FogExp2(0x000d20, 0.022);
+
+// ─── CAMERA ───────────────────────────────────────────────────────────────────
+const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 300);
+camera.position.set(0, 1.8, 5);
+
+// ─── PALETTE ──────────────────────────────────────────────────────────────────
+const P = {
+  sky:         0x000510,
+  fog:         0x000d20,
+  groundDark:  0x040c1a,
+  groundMid:   0x071428,
+  groundLight: 0x0d1e3a,
+  trunkA:      0x040810,
+  trunkB:      0x050c18,
+  foliageA:    0x050e1c,
+  foliageB:    0x071628,
+  foliageC:    0x040b16,
+  pathA:       0x08121e,
+  pathB:       0x0a1628,
+  rockDark:    0x080e18,
+  rockMid:     0x0c1828,
+  cyan:        0x00e5ff,
+  cyanDim:     0x0099bb,
+  purple:      0x330066,
+  star:        0x7799cc,
+};
+
+// ─── LIGHTING ─────────────────────────────────────────────────────────────────
+scene.add(new THREE.AmbientLight(0x050d20, 1.2));
+
+// Cold moonlight
+const moon = new THREE.DirectionalLight(0x1a3a6a, 0.8);
+moon.position.set(-10, 25, 5);
+moon.castShadow = true;
+moon.shadow.mapSize.set(2048, 2048);
+moon.shadow.camera.left = -60; moon.shadow.camera.right = 60;
+moon.shadow.camera.top  =  60; moon.shadow.camera.bottom = -60;
+moon.shadow.camera.far  = 200;
+scene.add(moon);
+
+// Subtle fill
+const fill = new THREE.DirectionalLight(0x0a0a2a, 0.3);
+fill.position.set(12, 6, -10);
+scene.add(fill);
+
+// Path glow lights
+const glowLights = [];
+for (let i = 0; i < 14; i++) {
+  const l = new THREE.PointLight(P.cyan, 0.25, 10);
+  l.position.set(0, 0.4, -i * 8 + 4);
+  scene.add(l);
+  glowLights.push({ l, phase: Math.random() * Math.PI * 2 });
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick  = arr  => arr[Math.floor(Math.random() * arr.length)];
+function flatMat(color) {
+  return new THREE.MeshPhongMaterial({ color, flatShading: true });
+}
+
+// ─── SKY DOME ─────────────────────────────────────────────────────────────────
+const skyGeo = new THREE.SphereGeometry(250, 8, 6);
+const skyMat = new THREE.MeshBasicMaterial({ color: 0x000814, side: THREE.BackSide });
+scene.add(new THREE.Mesh(skyGeo, skyMat));
+
+// ─── AURORA LAYERS ────────────────────────────────────────────────────────────
+const auroraData = [];
+const auroraColors = [0x00ffcc, 0x002299, 0x00aaff, 0x330066, 0x00ffaa];
+for (let i = 0; i < 6; i++) {
+  const w = rand(120, 220), h = rand(18, 35);
+  const geo = new THREE.PlaneGeometry(w, h, 6, 3);
+  const pos = geo.attributes.position;
+  for (let j = 0; j < pos.count; j++) {
+    pos.setY(j, pos.getY(j) + (Math.random() - 0.5) * 6);
+    pos.setX(j, pos.getX(j) + (Math.random() - 0.5) * 4);
+  }
+  pos.needsUpdate = true;
+  geo.computeVertexNormals();
+
+  const mat = new THREE.MeshBasicMaterial({
+    color:       auroraColors[i % auroraColors.length],
+    transparent: true,
+    opacity:     rand(0.012, 0.03),
+    side:        THREE.DoubleSide,
+    blending:    THREE.AdditiveBlending,
+    depthWrite:  false,
+  });
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(rand(-20, 20), rand(14, 28), rand(-60, -120));
+  m.rotation.x = rand(-0.15, 0.1);
+  m.rotation.y = rand(-0.2, 0.2);
+  scene.add(m);
+  auroraData.push({ m, mat, phase: Math.random() * Math.PI * 2, speed: rand(0.15, 0.4) });
+}
+
+// ─── STARS ────────────────────────────────────────────────────────────────────
+const STARS = 800;
+const sBuf  = new Float32Array(STARS * 3);
+for (let i = 0; i < STARS; i++) {
+  sBuf[i*3]   = rand(-120, 120);
+  sBuf[i*3+1] = rand(10, 55);
+  sBuf[i*3+2] = rand(-10, -230);
+}
+const starGeo = new THREE.BufferGeometry();
+starGeo.setAttribute('position', new THREE.BufferAttribute(sBuf, 3));
+scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({
+  color: P.star, size: 0.07, transparent: true, opacity: 0.7,
+  sizeAttenuation: true, depthWrite: false,
+})));
+
+// ─── GROUND (low-poly: few verts, big facets) ─────────────────────────────────
+const groundGeo = new THREE.PlaneGeometry(110, 240, 18, 38);
+const gp = groundGeo.attributes.position;
+for (let i = 0; i < gp.count; i++) {
+  const x = gp.getX(i);
+  const amp = Math.abs(x) > 4 ? rand(0, 0.55) : 0;
+  gp.setZ(i, amp);
+}
+gp.needsUpdate = true;
+groundGeo.computeVertexNormals();
+
+// Vertex colors for ground facet variety
+const groundColors = new Float32Array(gp.count * 3);
+const gColA = new THREE.Color(P.groundDark);
+const gColB = new THREE.Color(P.groundMid);
+const gColC = new THREE.Color(P.groundLight);
+for (let i = 0; i < gp.count; i++) {
+  const t = Math.random();
+  const c = t < 0.5 ? gColA.clone().lerp(gColB, t * 2)
+                     : gColB.clone().lerp(gColC, (t - 0.5) * 2);
+  groundColors[i*3]   = c.r;
+  groundColors[i*3+1] = c.g;
+  groundColors[i*3+2] = c.b;
+}
+groundGeo.setAttribute('color', new THREE.BufferAttribute(groundColors, 3));
+const ground = new THREE.Mesh(groundGeo, new THREE.MeshPhongMaterial({ vertexColors: true, flatShading: true }));
+ground.rotation.x = -Math.PI / 2;
+ground.position.z = -75;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// ─── PATH ─────────────────────────────────────────────────────────────────────
+const pathGeo = new THREE.PlaneGeometry(3.0, 240, 4, 48);
+const pp = pathGeo.attributes.position;
+for (let i = 0; i < pp.count; i++) {
+  const x = pp.getX(i);
+  if (Math.abs(x) > 1.2) {
+    pp.setX(i, x + (Math.random() - 0.5) * 0.25);
+    pp.setZ(i, (Math.random() - 0.5) * 0.05);
+  }
+}
+pp.needsUpdate = true;
+pathGeo.computeVertexNormals();
+const pathMesh = new THREE.Mesh(pathGeo, flatMat(P.pathA));
+pathMesh.rotation.x = -Math.PI / 2;
+pathMesh.position.set(0, 0.012, -75);
+pathMesh.receiveShadow = true;
+scene.add(pathMesh);
+
+// ─── GLOWING ROCKS (future idea nodes) ────────────────────────────────────────
+function makeGlowRockCluster(cx, cz) {
+  const count = 2 + Math.floor(Math.random() * 4);
+  for (let i = 0; i < count; i++) {
+    const s  = rand(0.12, 0.45);
+    const geo = new THREE.IcosahedronGeometry(s, 0);
+    const rp = geo.attributes.position;
+    for (let j = 0; j < rp.count; j++) {
+      rp.setX(j, rp.getX(j) * rand(0.7, 1.3));
+      rp.setY(j, rp.getY(j) * rand(0.5, 1.1));
+      rp.setZ(j, rp.getZ(j) * rand(0.7, 1.3));
+    }
+    rp.needsUpdate = true;
+    geo.computeVertexNormals();
+    const bright = Math.random() > 0.6;
+    const mat = new THREE.MeshPhongMaterial({
+      color:    bright ? 0x0d2a40 : P.rockMid,
+      emissive: bright ? 0x003344 : 0x000000,
+      flatShading: true,
+    });
+    const rock = new THREE.Mesh(geo, mat);
+    rock.position.set(cx + rand(-0.6, 0.6), s * 0.5, cz + rand(-0.6, 0.6));
+    rock.rotation.set(rand(0, Math.PI), rand(0, Math.PI), rand(0, Math.PI));
+    rock.castShadow = true;
+    scene.add(rock);
+  }
+  const l = new THREE.PointLight(P.cyan, rand(0.4, 0.9), rand(4, 8));
+  l.position.set(cx, 0.3, cz);
+  scene.add(l);
+  glowLights.push({ l, phase: Math.random() * Math.PI * 2, isRock: true });
+}
+
+const rockSpots = [
+  [-4.5,  -8], [ 5.2, -14], [-6,   -22],
+  [ 4.8, -30], [-5.5, -40], [ 6.2, -52],
+  [-4,   -62], [ 5.8, -75], [-7,   -88],
+  [ 4.5, -98], [-5,  -108],
+];
+rockSpots.forEach(([x, z]) => makeGlowRockCluster(x + rand(-0.5, 0.5), z));
+
+// ─── TREES ────────────────────────────────────────────────────────────────────
+const foliagePalette = [P.foliageA, P.foliageB, P.foliageC];
+const trunkPalette   = [P.trunkA, P.trunkB];
+
+function createLowPolyTree(x, z, scale) {
+  const group = new THREE.Group();
+  const trunkH = rand(2.8, 4.5) * scale;
+  const trunkGeo = new THREE.CylinderGeometry(0.06 * scale, 0.2 * scale, trunkH, 5, 2);
+  const tp = trunkGeo.attributes.position;
+  for (let i = 0; i < tp.count; i++) {
+    tp.setX(i, tp.getX(i) + (Math.random() - 0.5) * 0.06 * scale);
+  }
+  tp.needsUpdate = true;
+  trunkGeo.computeVertexNormals();
+  const trunk = new THREE.Mesh(trunkGeo, flatMat(pick(trunkPalette)));
+  trunk.position.y = trunkH / 2;
+  trunk.castShadow = true;
+  group.add(trunk);
+
+  const layers = 3 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < layers; i++) {
+    const t      = i / (layers - 1 || 1);
+    const radius = (0.75 - t * 0.25) * scale;
+    const height = (1.6  - t * 0.15) * scale;
+    const coneGeo = new THREE.ConeGeometry(radius, height, 5 + Math.floor(Math.random() * 2), 1);
+    const cp = coneGeo.attributes.position;
+    for (let j = 0; j < cp.count; j++) {
+      cp.setX(j, cp.getX(j) + (Math.random() - 0.5) * 0.08 * scale);
+      cp.setZ(j, cp.getZ(j) + (Math.random() - 0.5) * 0.08 * scale);
+    }
+    cp.needsUpdate = true;
+    coneGeo.computeVertexNormals();
+    const cone = new THREE.Mesh(coneGeo, flatMat(pick(foliagePalette)));
+    cone.position.y = trunkH + i * height * 0.52 - height * 0.15;
+    cone.rotation.y = rand(0, Math.PI * 2);
+    cone.castShadow = true;
+    group.add(cone);
+  }
+
+  group.position.set(x, 0, z);
+  group.rotation.y = rand(0, Math.PI * 2);
+  scene.add(group);
+}
+
+for (let z = 5; z > -150; z -= rand(1.5, 3.2)) {
+  const s = rand(0.7, 1.35);
+  createLowPolyTree(-(rand(2.2, 3.8)), z, s);
+  createLowPolyTree(  rand(2.2, 3.8),  z, s);
+  if (Math.random() > 0.4) createLowPolyTree(-(rand(4, 9)),   z + rand(-1, 1), rand(0.9, 1.5));
+  if (Math.random() > 0.4) createLowPolyTree(  rand(4, 9),   z + rand(-1, 1), rand(0.9, 1.5));
+  if (Math.random() > 0.65) createLowPolyTree(-(rand(9, 18)), z + rand(-2, 2), rand(1.4, 2.2));
+  if (Math.random() > 0.65) createLowPolyTree(  rand(9, 18), z + rand(-2, 2), rand(1.4, 2.2));
+}
+
+// ─── GROUND SCATTER — low-poly stones ─────────────────────────────────────────
+for (let i = 0; i < 120; i++) {
+  const x = rand(-35, 35), z = -rand(2, 130);
+  if (Math.abs(x) < 2.0) continue;
+  const s   = rand(0.05, 0.2);
+  const geo = new THREE.IcosahedronGeometry(s, 0);
+  const rp  = geo.attributes.position;
+  for (let j = 0; j < rp.count; j++) rp.setY(j, rp.getY(j) * rand(0.4, 0.9));
+  rp.needsUpdate = true;
+  geo.computeVertexNormals();
+  const m = new THREE.Mesh(geo, flatMat(pick([P.rockDark, P.rockMid])));
+  m.position.set(x, s * 0.45, z);
+  m.rotation.set(rand(0, Math.PI), rand(0, Math.PI), rand(0, Math.PI));
+  scene.add(m);
+}
+
+// ─── FIREFLIES ────────────────────────────────────────────────────────────────
+const FF = 200;
+const ffBuf  = new Float32Array(FF * 3);
+const ffInfo = [];
+for (let i = 0; i < FF; i++) {
+  const x = rand(-22, 22), y = rand(0.3, 4.5), z = -rand(2, 120);
+  ffBuf[i*3] = x; ffBuf[i*3+1] = y; ffBuf[i*3+2] = z;
+  ffInfo.push({ ox: x, oy: y, phase: rand(0, Math.PI * 2), speed: rand(0.3, 1.0) });
+}
+const ffGeo = new THREE.BufferGeometry();
+ffGeo.setAttribute('position', new THREE.BufferAttribute(ffBuf, 3));
+const ffMat = new THREE.PointsMaterial({
+  color: P.cyan, size: 0.065, transparent: true, opacity: 0.9,
+  sizeAttenuation: true, depthWrite: false,
+  blending: THREE.AdditiveBlending,
+});
+const fireflies = new THREE.Points(ffGeo, ffMat);
+scene.add(fireflies);
+
+// ─── MIST PLANES ──────────────────────────────────────────────────────────────
+const mistData = [];
+for (let z = -4; z > -130; z -= rand(5, 11)) {
+  const geo = new THREE.PlaneGeometry(rand(14, 32), rand(0.7, 2.0), 3, 2);
+  const mat = new THREE.MeshBasicMaterial({
+    color: 0x001428, transparent: true,
+    opacity: rand(0.05, 0.14), side: THREE.DoubleSide, depthWrite: false,
+  });
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(rand(-4, 4), rand(0.2, 1.2), z);
+  m.rotation.y = rand(-0.3, 0.3);
+  scene.add(m);
+  mistData.push({ m, drift: rand(0.0004, 0.0018) });
+}
+
+// ─── PATH SHIMMER TRAIL ───────────────────────────────────────────────────────
+const TRAIL = 80;
+const trailBuf = new Float32Array(TRAIL * 3);
+for (let i = 0; i < TRAIL; i++) {
+  trailBuf[i*3]   = rand(-0.5, 0.5);
+  trailBuf[i*3+1] = 0.02;
+  trailBuf[i*3+2] = -(i * 1.6 + 1);
+}
+const trailGeo = new THREE.BufferGeometry();
+trailGeo.setAttribute('position', new THREE.BufferAttribute(trailBuf, 3));
+scene.add(new THREE.Points(trailGeo, new THREE.PointsMaterial({
+  color: P.cyan, size: 0.045, transparent: true, opacity: 0.35,
+  sizeAttenuation: true, depthWrite: false,
+  blending: THREE.AdditiveBlending,
+})));
+
+// ─── ANIMATE ──────────────────────────────────────────────────────────────────
+let t = 0, camZ = 5;
+const LOOP_START = 5, LOOP_END = -110;
+
+function animate() {
+  requestAnimationFrame(animate);
+  t += 0.008;
+
+  camZ -= 0.01;
+  if (camZ < LOOP_END) camZ = LOOP_START;
+
+  camera.position.z = camZ;
+  camera.position.x = Math.sin(t * 0.22) * 0.15;
+  camera.position.y = 1.8 + Math.sin(t * 0.38) * 0.04;
+  camera.lookAt(Math.sin(t * 0.18) * 0.25, 1.55, camZ - 20);
+
+  // Firefly drift + flicker
+  const ffPos = fireflies.geometry.attributes.position;
+  for (let i = 0; i < FF; i++) {
+    const d = ffInfo[i];
+    ffPos.setX(i, d.ox + Math.sin(t * d.speed + d.phase) * 0.55);
+    ffPos.setY(i, d.oy + Math.sin(t * d.speed * 0.9 + d.phase + 1.4) * 0.28);
+  }
+  ffPos.needsUpdate = true;
+  ffMat.opacity = 0.45 + Math.sin(t * 2.8) * 0.45;
+
+  // Glow light pulse
+  glowLights.forEach(({ l, phase, isRock }) => {
+    l.intensity = isRock
+      ? 0.5 + Math.sin(t * 0.7 + phase) * 0.35
+      : 0.2 + Math.sin(t * 0.5 + phase) * 0.12;
+  });
+
+  // Aurora shimmer
+  auroraData.forEach(({ m, mat, phase, speed }) => {
+    mat.opacity = Math.max(0.005, 0.018 + Math.sin(t * speed + phase) * 0.012);
+    m.position.x += Math.sin(t * speed * 0.3 + phase) * 0.002;
+  });
+
+  // Mist drift
+  mistData.forEach(({ m, drift }) => {
+    m.position.x += drift;
+    if (m.position.x > 18) m.position.x = -18;
+  });
+
+  renderer.render(scene, camera);
+}
+animate();
+
+// ─── RESIZE ───────────────────────────────────────────────────────────────────
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>

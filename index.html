@@ -4,6 +4,9 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mind Palace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap" rel="stylesheet"/>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     body { overflow:hidden; background:#000002; cursor:none; }
@@ -19,11 +22,393 @@
       position:fixed; top:0; left:0;
       pointer-events:none; z-index:10;
     }
+
+    /* ── Archive panel ─────────────────────────────────── */
+    #archive-panel {
+      position: fixed; bottom: 36px; left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      width: min(540px, 90vw);
+      background: rgba(0,4,14,0.90);
+      border: 1px solid rgba(100,140,210,0.22);
+      border-radius: 13px;
+      padding: 24px 28px 20px;
+      z-index: 20; pointer-events: none;
+      opacity: 0;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 0 50px rgba(60,100,200,0.10), inset 0 0 60px rgba(0,8,28,0.5);
+      font-family: Georgia, serif; color: #c0d0ee;
+      transition: opacity 0.22s ease, transform 0.22s ease;
+    }
+    #archive-panel.visible {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateX(-50%) translateY(0);
+    }
+    #ap-title {
+      font-family: 'Cinzel', Georgia, serif;
+      font-size: 1.05em; font-weight: normal; color: #d8e6ff;
+      margin: 0 0 6px; letter-spacing: 0.07em;
+    }
+    #ap-tags {
+      font-size: 0.72em; color: #3d5278; letter-spacing: 0.06em;
+      margin-bottom: 13px; min-height: 1em;
+    }
+    #ap-body {
+      font-size: 0.86em; line-height: 1.68; color: #8fa8cc;
+      margin: 0 0 20px; white-space: pre-wrap;
+      max-height: 130px; overflow-y: auto;
+    }
+    #ap-connections { display: flex; gap: 9px; flex-wrap: wrap; margin-bottom: 14px; }
+    .conn-btn {
+      flex: 1; min-width: 130px;
+      background: rgba(50,80,130,0.18);
+      border: 1px solid rgba(90,130,210,0.28);
+      border-radius: 8px; padding: 9px 13px;
+      color: #a8c0e8; cursor: pointer;
+      font-family: Georgia, serif; font-size: 0.80em;
+      text-align: left; transition: all 0.18s; line-height: 1.4;
+    }
+    .conn-btn:hover {
+      background: rgba(70,110,190,0.32);
+      border-color: rgba(130,170,255,0.50); color: #ccdaff;
+    }
+    .conn-title { font-style: italic; display: block; }
+    .conn-hint { font-size: 0.76em; color: #506080; display: block; margin-top: 3px; }
+    #archive-resume {
+      background: none; border: none;
+      color: rgba(80,100,140,0.65);
+      font-family: Georgia, serif; font-size: 0.73em;
+      cursor: pointer; letter-spacing: 0.10em; padding: 0; float: right;
+    }
+    #archive-resume:hover { color: rgba(140,165,220,0.90); }
+
+    /* ── Add button ───────────────────────────────────── */
+    #add-btn {
+      position: fixed; bottom: 26px; right: 26px;
+      width: 40px; height: 40px;
+      background: rgba(10,22,48,0.82);
+      border: 1px solid rgba(90,130,200,0.28);
+      border-radius: 50%; color: rgba(140,175,240,0.75);
+      font-size: 1.35em; cursor: pointer; z-index: 25;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.18s; backdrop-filter: blur(5px);
+    }
+    #add-btn:hover {
+      background: rgba(30,55,100,0.88);
+      border-color: rgba(130,170,255,0.55); color: #b8d0ff;
+    }
+
+    /* ── Add form ─────────────────────────────────────── */
+    #add-form {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0.97);
+      width: min(470px, 86vw);
+      background: rgba(0,4,18,0.95);
+      border: 1px solid rgba(90,130,200,0.28);
+      border-radius: 14px; padding: 26px 28px;
+      z-index: 30; opacity: 0; pointer-events: none;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 0 70px rgba(50,90,180,0.16);
+      font-family: Georgia, serif;
+      transition: opacity 0.20s ease, transform 0.20s ease;
+    }
+    #add-form.visible {
+      opacity: 1;
+      pointer-events: all;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    #add-form h3 {
+      font-family: 'Cinzel', Georgia, serif;
+      color: #b8ccee; font-weight: normal;
+      margin: 0 0 18px; font-size: 0.95em; letter-spacing: 0.10em;
+    }
+    #add-form input, #add-form textarea {
+      width: 100%; box-sizing: border-box;
+      background: rgba(8,18,42,0.70);
+      border: 1px solid rgba(70,100,160,0.32);
+      border-radius: 7px; color: #a8c0e8;
+      font-family: Georgia, serif; font-size: 0.86em;
+      padding: 9px 12px; margin-bottom: 11px;
+      outline: none; resize: vertical;
+    }
+    #add-form input::placeholder,
+    #add-form textarea::placeholder { color: rgba(100,130,175,0.45); }
+    #add-form input:focus,
+    #add-form textarea:focus { border-color: rgba(110,155,230,0.55); }
+    #add-form textarea { min-height: 86px; }
+    .form-row { display: flex; gap: 9px; justify-content: flex-end; }
+    .form-btn {
+      background: rgba(35,60,110,0.55);
+      border: 1px solid rgba(90,130,200,0.38);
+      border-radius: 7px; color: #a8c4f0;
+      font-family: Georgia, serif; font-size: 0.81em;
+      padding: 8px 18px; cursor: pointer; transition: all 0.18s;
+    }
+    .form-btn:hover { background: rgba(55,95,165,0.65); }
+    .form-btn.secondary {
+      background: rgba(15,25,48,0.40);
+      border-color: rgba(60,85,130,0.28); color: rgba(130,155,200,0.65);
+    }
+
+    /* ── Image drop zone (inside add form) ───────────────── */
+    #af-img-zone { margin-bottom: 11px; }
+    #af-img-drop {
+      border: 1px dashed rgba(90,130,200,0.30);
+      border-radius: 7px; padding: 11px;
+      text-align: center; cursor: pointer;
+      font-size: 0.78em; color: rgba(110,145,200,0.45);
+      transition: all 0.15s;
+    }
+    #af-img-drop:hover, #af-img-drop.drag-over {
+      border-color: rgba(130,170,255,0.55);
+      background: rgba(40,70,130,0.12);
+      color: rgba(150,185,255,0.75);
+    }
+    #af-img-drop label { cursor: pointer; color: rgba(140,175,240,0.65); text-decoration: underline; text-underline-offset: 2px; }
+    #af-img-preview {
+      position: relative; border-radius: 7px; overflow: hidden;
+      border: 1px solid rgba(90,130,200,0.28);
+    }
+    #af-img-thumb { width: 100%; display: block; max-height: 130px; object-fit: contain; background: rgba(0,5,20,0.5); }
+    #af-img-clear {
+      position: absolute; top: 5px; right: 6px;
+      background: rgba(0,5,20,0.75); border: 1px solid rgba(90,130,200,0.30);
+      border-radius: 4px; color: rgba(160,190,240,0.80);
+      font-size: 0.72em; padding: 2px 7px; cursor: pointer;
+    }
+
+    /* ── Pinterest button ─────────────────────────────── */
+    #pint-btn {
+      position: fixed; bottom: 74px; right: 26px;
+      width: 40px; height: 40px;
+      background: rgba(10,22,48,0.82);
+      border: 1px solid rgba(150,60,80,0.32);
+      border-radius: 50%; color: rgba(200,100,120,0.70);
+      font-size: 1.05em; font-weight: bold; font-family: Georgia, serif;
+      cursor: pointer; z-index: 25;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.18s; backdrop-filter: blur(5px);
+    }
+    #pint-btn:hover {
+      background: rgba(80,18,32,0.90);
+      border-color: rgba(230,70,95,0.55); color: #e8809a;
+    }
+    #pint-btn.connected { border-color: rgba(210,75,100,0.55); color: rgba(230,95,120,0.85); }
+
+    /* ── Pinterest modal ──────────────────────────────── */
+    #pint-modal {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(490px, 88vw);
+      background: rgba(0,3,16,0.96);
+      border: 1px solid rgba(160,65,88,0.28);
+      border-radius: 14px; padding: 26px 28px;
+      z-index: 30; display: none;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 0 70px rgba(160,50,70,0.12);
+      font-family: Georgia, serif;
+    }
+    #pint-modal.visible { display: block; }
+    #pint-modal h3 {
+      color: #d8a0b0; font-weight: normal;
+      margin: 0 0 8px; font-size: 0.95em; letter-spacing: 0.10em;
+    }
+    .pint-hint {
+      font-size: 0.78em; color: rgba(180,135,150,0.55);
+      line-height: 1.65; margin-bottom: 15px;
+    }
+    .pint-hint em { font-style: italic; color: rgba(200,145,160,0.65); }
+    #pint-token-input {
+      width: 100%; box-sizing: border-box;
+      background: rgba(8,16,40,0.72);
+      border: 1px solid rgba(130,55,80,0.30);
+      border-radius: 7px; color: #c8a0b8;
+      font-family: Georgia, serif; font-size: 0.86em;
+      padding: 9px 12px; margin-bottom: 11px; outline: none;
+    }
+    #pint-token-input:focus { border-color: rgba(210,75,105,0.55); }
+    #pint-board-list {
+      max-height: 175px; overflow-y: auto;
+      margin-bottom: 12px;
+      border: 1px solid rgba(110,45,65,0.22);
+      border-radius: 8px; padding: 5px;
+    }
+    .pint-board {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 10px; border-radius: 6px;
+      cursor: pointer; transition: background 0.15s;
+      font-size: 0.83em; color: #b890a8; user-select: none;
+    }
+    .pint-board:hover { background: rgba(160,55,80,0.14); }
+    .pint-board input[type=checkbox] { accent-color: #c05878; cursor: pointer; }
+    #pint-status {
+      font-size: 0.77em; color: rgba(195,120,145,0.65);
+      margin-top: 9px; min-height: 1.1em;
+    }
+    .pint-row { display: flex; gap: 9px; justify-content: space-between; align-items: center; }
+    .pint-btn {
+      background: rgba(110,28,48,0.52);
+      border: 1px solid rgba(190,65,92,0.35);
+      border-radius: 7px; color: #d898b0;
+      font-family: Georgia, serif; font-size: 0.80em;
+      padding: 8px 17px; cursor: pointer; transition: all 0.18s;
+    }
+    .pint-btn:hover { background: rgba(150,38,62,0.62); }
+    .pint-btn.secondary {
+      background: rgba(14,22,46,0.42);
+      border-color: rgba(90,45,65,0.28); color: rgba(160,110,135,0.65);
+    }
+
+    /* ── Pinterest tabs ───────────────────────────────── */
+    #pint-tabs {
+      display: flex; gap: 0; margin-bottom: 16px;
+      border-bottom: 1px solid rgba(150,55,80,0.22);
+    }
+    .pint-tab {
+      background: none; border: none; border-bottom: 2px solid transparent;
+      color: rgba(180,110,130,0.50); font-family: Georgia, serif;
+      font-size: 0.80em; letter-spacing: 0.08em;
+      padding: 6px 16px 8px; cursor: pointer;
+      margin-bottom: -1px; transition: all 0.15s;
+    }
+    .pint-tab:hover { color: rgba(210,130,155,0.80); }
+    .pint-tab.active {
+      color: #d898b0;
+      border-bottom-color: rgba(210,80,110,0.55);
+    }
+
+    /* ── Drop zone ─────────────────────────────────────── */
+    #pint-dropzone {
+      border: 1px dashed rgba(160,65,90,0.38);
+      border-radius: 9px; padding: 22px 16px;
+      text-align: center; cursor: pointer;
+      transition: all 0.18s; margin-bottom: 10px;
+      background: rgba(80,15,30,0.10);
+    }
+    #pint-dropzone:hover, #pint-dropzone.drag-over {
+      border-color: rgba(220,80,110,0.60);
+      background: rgba(120,20,45,0.18);
+    }
+    #pint-drop-label {
+      font-size: 0.80em; color: rgba(190,120,140,0.55);
+      font-family: Georgia, serif; pointer-events: none;
+    }
+    #pint-import-status {
+      font-size: 0.78em; color: rgba(195,120,145,0.75);
+      min-height: 1.1em; text-align: center;
+    }
+
+    /* ── Tooltip ──────────────────────────────────────── */
+    #arc-tip {
+      position: fixed; pointer-events: none; z-index: 22;
+      background: rgba(0,5,18,0.84);
+      border: 1px solid rgba(90,130,200,0.28);
+      border-radius: 6px; padding: 6px 12px;
+      font-family: Georgia, serif; font-size: 0.80em;
+      color: #a8c0e8; white-space: nowrap;
+      backdrop-filter: blur(5px);
+      opacity: 0; transition: opacity 0.15s;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
 <div id="vignette"></div>
 <canvas id="overlay"></canvas>
+
+<!-- Archive panel -->
+<div id="archive-panel">
+  <div id="ap-title"></div>
+  <div id="ap-tags"></div>
+  <div id="ap-body"></div>
+  <div id="ap-connections"></div>
+  <button id="archive-resume">resume walking ›</button>
+</div>
+
+<!-- Add item form -->
+<div id="add-form">
+  <h3>new memory</h3>
+  <input id="af-title" type="text" placeholder="Title" autocomplete="off"/>
+  <textarea id="af-body" placeholder="Your thought, idea, or memory…"></textarea>
+  <input id="af-tags" type="text" placeholder="tags, separated by commas" autocomplete="off"/>
+  <div id="af-img-zone">
+    <div id="af-img-drop">drop image here or <label for="af-image-input">browse</label></div>
+    <input type="file" id="af-image-input" accept="image/*" style="display:none"/>
+    <div id="af-img-preview" style="display:none">
+      <img id="af-img-thumb" src="" alt=""/>
+      <button type="button" id="af-img-clear">✕ remove</button>
+    </div>
+  </div>
+  <div class="form-row">
+    <button type="button" class="form-btn secondary" id="af-cancel">cancel</button>
+    <button type="button" class="form-btn" id="af-submit">place in forest</button>
+  </div>
+</div>
+
+<!-- Add button -->
+<button id="add-btn" title="Add memory (N)">+</button>
+
+<!-- Pinterest button -->
+<button id="pint-btn" title="Pinterest sync">P</button>
+
+<!-- Pinterest modal -->
+<div id="pint-modal">
+  <h3>pinterest</h3>
+
+  <!-- ── Tab bar ── -->
+  <div id="pint-tabs">
+    <button type="button" class="pint-tab active" data-tab="import">import file</button>
+    <button type="button" class="pint-tab" data-tab="api">live sync</button>
+  </div>
+
+  <!-- ── Import tab ── -->
+  <div id="pint-tab-import" class="pint-tabpane">
+    <p class="pint-hint">
+      Pinterest → <em>Settings → Privacy and data → Request your data</em><br>
+      Download the ZIP · open it · drag the <em>pins.json</em> (or any CSV/JSON with pins) here.
+    </p>
+    <div id="pint-dropzone">
+      <span id="pint-drop-label">drop file here or click to browse</span>
+      <input type="file" id="pint-file-input" accept=".json,.csv" style="display:none"/>
+    </div>
+    <div id="pint-import-status"></div>
+    <div class="pint-row" style="margin-top:14px">
+      <button type="button" class="pint-btn secondary" id="pint-close1">close</button>
+    </div>
+  </div>
+
+  <!-- ── Live sync tab ── -->
+  <div id="pint-tab-api" class="pint-tabpane" style="display:none">
+    <div id="pint-setup-section">
+      <p class="pint-hint">
+        Works with your personal account.<br>
+        Go to <em>developers.pinterest.com</em> → sign in → create an app →
+        generate a user token with <em>boards:read</em> and <em>pins:read</em>.<br>
+        <span style="color:rgba(160,100,120,0.38)">Open via <em>localhost</em> if connection is blocked.</span>
+      </p>
+      <input id="pint-token-input" type="password" placeholder="Pinterest access token…" autocomplete="off"/>
+      <div class="pint-row">
+        <button type="button" class="pint-btn secondary" id="pint-close2">cancel</button>
+        <button type="button" class="pint-btn" id="pint-connect-btn">connect</button>
+      </div>
+    </div>
+    <div id="pint-boards-section" style="display:none">
+      <p class="pint-hint" style="margin-bottom:9px">Select boards to sync:</p>
+      <div id="pint-board-list"></div>
+      <div class="pint-row">
+        <button type="button" class="pint-btn secondary" id="pint-disconnect-btn">disconnect</button>
+        <div style="display:flex;gap:8px">
+          <button type="button" class="pint-btn secondary" id="pint-close3">close</button>
+          <button type="button" class="pint-btn" id="pint-sync-btn">sync now</button>
+        </div>
+      </div>
+    </div>
+    <div id="pint-status"></div>
+  </div>
+</div>
+
+<!-- Tooltip -->
+<div id="arc-tip"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1082,16 +1467,27 @@ function animate() {
   mouse.x += (mouse.tx - mouse.x) * Math.min(1.0*dt, 0.06);
   mouse.y += (mouse.ty - mouse.y) * Math.min(1.0*dt, 0.06);
 
-  // ── Camera forward drift — slow, majestic walk ──
-  camDriftZ -= dt * 0.65;
-  if (camDriftZ < LOOP_END) camDriftZ = LOOP_START;
+  // ── Camera forward drift / travel ──
+  if (walkState === 'walking') {
+    camDriftZ -= dt * 0.65;
+    if (camDriftZ < LOOP_END) camDriftZ = LOOP_START;
+  } else if (walkState === 'traveling') {
+    // Pull camDriftZ toward the destination so the spring follows
+    camDriftZ += (travelTargetZ - camDriftZ) * Math.min(dt * 2.4, 0.15);
+    if (Math.abs(sp.pz - travelTargetZ) < ARRIVE_DIST) {
+      walkState = 'viewing';
+      showPanel(travelItem);
+    }
+  }
 
   // ── Fog breathes between near-black ↔ deep navy — Forbidden Forest mood ──
   const fogPulse = Math.sin(t*0.05)*0.5+0.5;
   scene.fog.color.setRGB(0, lerp(0.010,0.018,fogPulse), lerp(0.032,0.048,fogPulse));
 
   // ── Target camera position (gentle sway + mouse) ──
-  const tX = Math.sin(t*0.18)*0.10 + Math.sin(t*0.06)*0.04 + mouse.x*0.18;
+  const tX = (walkState === 'traveling' || walkState === 'viewing')
+    ? mouse.x * 0.07
+    : Math.sin(t*0.18)*0.10 + Math.sin(t*0.06)*0.04 + mouse.x*0.18;
   const tY = 1.8 + Math.sin(t*0.28)*0.030 + Math.sin(t*0.13)*0.012 - mouse.y*0.08;
 
   // ── Spring-physics camera — critically-damped (damp≥1 = zero overshoot) ──
@@ -1101,7 +1497,9 @@ function animate() {
   { const r=springStep(sp.pz,sp.vz,camDriftZ,dt,0.55,1.10); sp.pz=r.p; sp.vz=r.v; }
 
   // ── Look target — reduced sway + gentle mouse offset ──
-  const tlX = Math.sin(t*0.14)*0.14 + mouse.x*0.38;
+  const tlX = (walkState === 'traveling' || walkState === 'viewing') && travelItem
+    ? travelItem.pos.x * 0.28 + mouse.x * 0.10
+    : Math.sin(t*0.14)*0.14 + mouse.x*0.38;
   const tlY = 1.55 - mouse.y*0.10;
   { const r=springStep(lk.px,lk.vx,tlX,dt,2.0,1.05); lk.px=r.p; lk.vx=r.v; }
   { const r=springStep(lk.py,lk.vy,tlY,dt,1.8,1.05); lk.py=r.p; lk.vy=r.v; }
@@ -1195,6 +1593,19 @@ function animate() {
     if (m.position.x < -24) m.position.x =  24;
   });
 
+  // ── Archive orbs — breathe and pulse ──
+  orbData.forEach(orb => {
+    const { mat, coreMat, light, phase, item } = orb;
+    const pulse = 0.38 + Math.sin(t * 1.25 + phase) * 0.20 + Math.sin(t * 2.6 + phase * 1.4) * 0.08;
+    mat.opacity = Math.max(0.14, pulse);
+    if (coreMat) {
+      coreMat.opacity = item.imageUrl
+        ? 0.86 + Math.sin(t * 0.75 + phase) * 0.06   // subtle pulse for images
+        : 0.50 + Math.sin(t * 1.85 + phase) * 0.32;  // strong pulse for glows
+    }
+    light.intensity = 0.25 + Math.sin(t * 1.15 + phase) * 0.18;
+  });
+
   // Compute shadow map on first frame only, then freeze
   if (!renderer._shadowsFrozen) {
     renderer.shadowMap.needsUpdate = true;
@@ -1206,6 +1617,694 @@ function animate() {
   // ── 2D trail (drawn over the 3D canvas) ──
   drawTrail(dt);
 }
+// ═══════════════════════════════════════════════════════════════════════════════
+// PERSONAL ARCHIVE
+// ─────────────────────────────────────────────────────────────────────────────
+// Add items to SEED_ITEMS — they always appear in the forest.
+// User-added items (via the + button) are saved to localStorage automatically.
+// Each item: { id, title, body, tags: ['tag1','tag2'], pos: { x, z } }
+//   pos.x : left/right of path  (range: -8 to 8)
+//   pos.z : depth into forest   (range: -10 to -110)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const SEED_ITEMS = [
+  // ── Add your own items below this line ───────────────────────────────────
+  {
+    id: 's1', title: 'The Archive',
+    body: 'This forest holds your thoughts. Each glowing orb is a memory. Click one to travel to it — then follow the connections it offers.',
+    tags: ['guide'],
+    pos: { x: 3.5, z: -16 }
+  },
+  {
+    id: 's2', title: 'How to add',
+    body: 'Press N or click the + button to place a new memory in the forest. Give it tags and it will find its own connections.',
+    tags: ['guide', 'idea'],
+    pos: { x: -4.5, z: -38 }
+  },
+  // ─────────────────────────────────────────────────────────────────────────
+];
+
+// ── Persistence — IndexedDB (no practical size limit) ────────────────────────
+const IDB_NAME  = 'mindpalace_db';
+const IDB_STORE = 'items';
+
+function idbOpen() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore(IDB_STORE, { keyPath: 'id' });
+    req.onsuccess = e => res(e.target.result);
+    req.onerror   = e => rej(e.target.error);
+  });
+}
+
+function dbLoad() {
+  return idbOpen().then(db => new Promise((res, rej) => {
+    const req = db.transaction(IDB_STORE, 'readonly').objectStore(IDB_STORE).getAll();
+    req.onsuccess = e => res(e.target.result || []);
+    req.onerror   = e => rej(e.target.error);
+  }));
+}
+
+function saveItems() {
+  const seedIds   = new Set(SEED_ITEMS.map(i => i.id));
+  const userItems = archiveItems.filter(i => !seedIds.has(i.id));
+  idbOpen().then(db => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    const st = tx.objectStore(IDB_STORE);
+    st.clear();
+    userItems.forEach(item => st.put(item));
+  }).catch(() => {});
+}
+
+let archiveItems = [...SEED_ITEMS];
+
+// ── Auto-position (for items added via form) ──────────────────────────────────
+function randomArchivePos() {
+  const side = Math.random() > 0.5 ? 1 : -1;
+  return { x: side * rand(2.8, 7.2), z: -rand(12, 108) };
+}
+
+// ── Connection algorithm — tag overlap + slight noise ─────────────────────────
+function findConnections(item, count) {
+  count = count || 3;
+  const others = archiveItems.filter(i => i.id !== item.id);
+  if (!others.length) return [];
+  const scored = others.map(other => {
+    const shared = (item.tags || []).filter(t => (other.tags || []).includes(t)).length;
+    return { item: other, score: shared + Math.random() * 0.45 };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, Math.min(count, scored.length)).map(s => s.item);
+}
+
+// ── Orb visuals ───────────────────────────────────────────────────────────────
+const glowOrb = makeGlowTex(148, 182, 255);
+const orbData  = [];  // { item, sprite, mat, core, coreMat, hitMesh, light, phase }
+
+function createOrb(item) {
+  if (!item.pos) item.pos = randomArchivePos();
+  const px = item.pos.x, py = 1.65, pz = item.pos.z;
+
+  // Outer glow sprite (always present)
+  const { sprite, mat } = makeSprite(glowOrb, 2.6, 0.50);
+  sprite.position.set(px, py, pz);
+  scene.add(sprite);
+
+  // Point light
+  const light = new THREE.PointLight(0x7799ee, 0.40, 9);
+  light.position.set(px, py, pz);
+  scene.add(light);
+
+  // Invisible hit sphere for raycasting
+  const hitMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(0.85, 5, 4),
+    new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
+  );
+  hitMesh.position.set(px, py, pz);
+  hitMesh.userData.archiveItem = item;
+  scene.add(hitMesh);
+
+  const entry = { item, sprite, mat, core: null, coreMat: null, hitMesh, light, phase: rand(0, Math.PI*2) };
+  orbData.push(entry);
+
+  if (item.imageUrl) {
+    // Soft placeholder glow while image loads
+    const { sprite: ph, mat: phMat } = makeSprite(glowWhite, 0.55, 0.45);
+    ph.position.set(px, py, pz);
+    scene.add(ph);
+    entry.core = ph; entry.coreMat = phMat;
+
+    const loader = new THREE.TextureLoader();
+    loader.crossOrigin = 'anonymous';
+    loader.load(item.imageUrl, texture => {
+      scene.remove(ph);
+      const aspect = texture.image.width / texture.image.height;
+      const h = 1.15, w = h * Math.min(Math.max(aspect, 0.4), 2.5);
+      const imgMat = new THREE.SpriteMaterial({
+        map: texture, transparent: true, opacity: 0.92, depthWrite: false,
+      });
+      const imgSprite = new THREE.Sprite(imgMat);
+      imgSprite.scale.set(w, h, 1);
+      imgSprite.position.set(px, py, pz);
+      scene.add(imgSprite);
+      entry.core = imgSprite; entry.coreMat = imgMat;
+      hitMesh.scale.set(Math.max(w * 0.65, 0.85), 1, 0.85);
+    }, undefined, () => {
+      // Image failed — fall back to white core glow
+      const { sprite: fb, mat: fbMat } = makeSprite(glowWhite, 0.55, 0.80);
+      fb.position.set(px, py, pz); scene.add(fb);
+      entry.core = fb; entry.coreMat = fbMat;
+    });
+  } else {
+    const { sprite: core, mat: coreMat } = makeSprite(glowWhite, 0.55, 0.80);
+    core.position.set(px, py, pz);
+    scene.add(core);
+    entry.core = core; entry.coreMat = coreMat;
+  }
+}
+
+// Seeds render immediately so the forest is never empty
+SEED_ITEMS.forEach(createOrb);
+
+// User items load async from IndexedDB
+(async () => {
+  let stored = await dbLoad().catch(() => []);
+
+  // One-time migration from old localStorage
+  if (!stored.length) {
+    try {
+      const raw = localStorage.getItem('mindpalace_v1');
+      if (raw) {
+        stored = JSON.parse(raw) || [];
+        localStorage.removeItem('mindpalace_v1');
+      }
+    } catch(e) {}
+  }
+
+  const existingIds = new Set(archiveItems.map(i => i.id));
+  stored.forEach(item => {
+    if (!existingIds.has(item.id)) {
+      archiveItems.push(item);
+      createOrb(item);
+    }
+  });
+
+  if (stored.length) saveItems(); // flush migrated data into IndexedDB
+})();
+
+// ── Travel state ──────────────────────────────────────────────────────────────
+let walkState    = 'walking'; // 'walking' | 'traveling' | 'viewing'
+let travelItem   = null;
+let travelTargetZ = camDriftZ;
+const ARRIVE_DIST = 3.0;
+
+function travelTo(item) {
+  if (!item || !item.pos) return;
+  travelItem    = item;
+  travelTargetZ = item.pos.z + 5;
+  walkState     = 'traveling';
+  hidePanel();
+}
+
+function resumeWalking() {
+  walkState = 'walking';
+  camDriftZ  = sp.pz; // restart drift from current position
+  hidePanel();
+}
+
+// ── Panel UI ──────────────────────────────────────────────────────────────────
+const panel      = document.getElementById('archive-panel');
+const apTitle    = document.getElementById('ap-title');
+const apTags     = document.getElementById('ap-tags');
+const apBody     = document.getElementById('ap-body');
+const apConns    = document.getElementById('ap-connections');
+const arcResume  = document.getElementById('archive-resume');
+
+arcResume.addEventListener('click', resumeWalking);
+
+function showPanel(item) {
+  apTitle.textContent = item.title || 'Untitled';
+  apTags.textContent  = (item.tags || []).join('  ·  ');
+  apBody.textContent  = item.body  || '';
+
+  apConns.innerHTML = '';
+  findConnections(item, 3).forEach(conn => {
+    const btn = document.createElement('button');
+    btn.className = 'conn-btn';
+    btn.innerHTML =
+      `<span class="conn-title">${conn.title || 'Untitled'}</span>` +
+      ((conn.tags && conn.tags.length)
+        ? `<span class="conn-hint">${conn.tags.slice(0,2).join(' · ')}</span>` : '');
+    btn.addEventListener('click', () => travelTo(conn));
+    apConns.appendChild(btn);
+  });
+
+  panel.classList.add('visible');
+}
+
+function hidePanel() { panel.classList.remove('visible'); }
+
+// ── Add form ──────────────────────────────────────────────────────────────────
+const addForm   = document.getElementById('add-form');
+const addBtn    = document.getElementById('add-btn');
+const afTitle   = document.getElementById('af-title');
+const afBody    = document.getElementById('af-body');
+const afTags    = document.getElementById('af-tags');
+const afCancel  = document.getElementById('af-cancel');
+const afSubmit  = document.getElementById('af-submit');
+
+// ── Image handling ────────────────────────────────────────────────────────────
+let pendingImageUrl = null;
+
+function resizeImage(file, cb) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 480;
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      cb(c.toDataURL('image/jpeg', 0.82));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function setFormImage(dataUrl) {
+  pendingImageUrl = dataUrl;
+  document.getElementById('af-img-thumb').src = dataUrl;
+  document.getElementById('af-img-drop').style.display    = 'none';
+  document.getElementById('af-img-preview').style.display = 'block';
+}
+
+function clearFormImage() {
+  pendingImageUrl = null;
+  document.getElementById('af-img-thumb').src = '';
+  document.getElementById('af-img-preview').style.display = 'none';
+  document.getElementById('af-img-drop').style.display    = 'block';
+}
+
+document.getElementById('af-image-input').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (f && f.type.startsWith('image/')) resizeImage(f, setFormImage);
+  e.target.value = '';
+});
+
+document.getElementById('af-img-clear').addEventListener('click', clearFormImage);
+
+// Drop onto the in-form zone
+const imgDropZone = document.getElementById('af-img-drop');
+imgDropZone.addEventListener('dragover',  e => { e.preventDefault(); imgDropZone.classList.add('drag-over'); });
+imgDropZone.addEventListener('dragleave', () => imgDropZone.classList.remove('drag-over'));
+imgDropZone.addEventListener('drop', e => {
+  e.preventDefault(); e.stopPropagation();
+  imgDropZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) resizeImage(f, setFormImage);
+});
+
+// Global drop — image dragged anywhere on the canvas opens the form pre-loaded
+document.body.addEventListener('dragover', e => {
+  if ([...e.dataTransfer.types].includes('Files')) e.preventDefault();
+});
+document.body.addEventListener('drop', e => {
+  e.preventDefault();
+  const f = [...e.dataTransfer.files].find(f => f.type.startsWith('image/'));
+  if (!f) return;
+  const name = f.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
+  resizeImage(f, dataUrl => {
+    openAddForm();
+    if (!afTitle.value) afTitle.value = name;
+    setFormImage(dataUrl);
+    afTitle.select();
+  });
+});
+
+function openAddForm() {
+  afTitle.value = ''; afBody.value = ''; afTags.value = '';
+  clearFormImage();
+  addForm.classList.add('visible');
+  setTimeout(() => afTitle.focus(), 60);
+}
+
+addBtn   .addEventListener('click', openAddForm);
+afCancel .addEventListener('click', () => addForm.classList.remove('visible'));
+
+afSubmit.addEventListener('click', () => {
+  const title = afTitle.value.trim();
+  if (!title) {
+    afTitle.style.borderColor = 'rgba(200,80,80,0.7)';
+    afTitle.focus();
+    setTimeout(() => { afTitle.style.borderColor = ''; }, 1200);
+    return;
+  }
+  const item = {
+    id:    'u' + Date.now(),
+    title,
+    body:  afBody.value.trim(),
+    tags:  afTags.value.split(',').map(t => t.trim()).filter(Boolean),
+    pos:   randomArchivePos(),
+    ...(pendingImageUrl && { imageUrl: pendingImageUrl }),
+  };
+  archiveItems.push(item);
+  saveItems();
+  createOrb(item);
+  addForm.classList.remove('visible');
+  travelTo(item);
+});
+
+// ── Keyboard shortcuts ────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (addForm.classList.contains('visible')) {
+    if (e.key === 'Escape') addForm.classList.remove('visible');
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) afSubmit.click();
+    return;
+  }
+  if (e.key === 'Escape' && walkState === 'viewing') resumeWalking();
+  if ((e.key === 'n' || e.key === 'N') && walkState !== 'viewing') openAddForm();
+});
+
+// ── Tooltip ───────────────────────────────────────────────────────────────────
+const arcTip = document.getElementById('arc-tip');
+
+function showTip(x, y, text) {
+  arcTip.textContent = text;
+  arcTip.style.left    = (x + 15) + 'px';
+  arcTip.style.top     = (y - 24) + 'px';
+  arcTip.style.opacity = '1';
+}
+function hideTip() { arcTip.style.opacity = '0'; }
+
+// ── Raycaster ─────────────────────────────────────────────────────────────────
+const raycaster = new THREE.Raycaster();
+
+renderer.domElement.addEventListener('click', e => {
+  if (walkState === 'viewing') return;
+  const ndc = new THREE.Vector2(
+    (e.clientX / window.innerWidth)  *  2 - 1,
+    (e.clientY / window.innerHeight) * -2 + 1
+  );
+  raycaster.setFromCamera(ndc, camera);
+  const hits = raycaster.intersectObjects(orbData.map(d => d.hitMesh));
+  if (hits.length) {
+    const item = hits[0].object.userData.archiveItem;
+    if (item) travelTo(item);
+  }
+});
+
+renderer.domElement.addEventListener('mousemove', e => {
+  if (walkState === 'viewing') return;
+  const ndc = new THREE.Vector2(
+    (e.clientX / window.innerWidth)  *  2 - 1,
+    (e.clientY / window.innerHeight) * -2 + 1
+  );
+  raycaster.setFromCamera(ndc, camera);
+  const hits = raycaster.intersectObjects(orbData.map(d => d.hitMesh));
+  if (hits.length && hits[0].object.userData.archiveItem) {
+    showTip(e.clientX, e.clientY, hits[0].object.userData.archiveItem.title || 'Untitled');
+  } else {
+    hideTip();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PINTEREST SYNC
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const P_TOKEN_KEY  = 'mp_pint_token';
+const P_BOARDS_KEY = 'mp_pint_boards';   // JSON array of selected board IDs
+const P_SYNCED_KEY = 'mp_pint_synced';   // JSON array of already-synced pin IDs
+const P_SYNC_MS    = 30 * 60 * 1000;    // auto-sync interval
+
+let pintToken     = localStorage.getItem(P_TOKEN_KEY) || '';
+let pintBoards    = JSON.parse(localStorage.getItem(P_BOARDS_KEY)  || '[]');
+let pintSyncedIds = new Set(JSON.parse(localStorage.getItem(P_SYNCED_KEY) || '[]'));
+
+// ── DOM refs ──────────────────────────────────────────────────────────────────
+const pintBtn       = document.getElementById('pint-btn');
+const pintModal     = document.getElementById('pint-modal');
+const pintSetupSec  = document.getElementById('pint-setup-section');
+const pintBoardsSec = document.getElementById('pint-boards-section');
+const pintTokenInp  = document.getElementById('pint-token-input');
+const pintConnBtn   = document.getElementById('pint-connect-btn');
+const pintDisconBtn = document.getElementById('pint-disconnect-btn');
+const pintSyncBtn   = document.getElementById('pint-sync-btn');
+const pintBoardList = document.getElementById('pint-board-list');
+const pintStatus    = document.getElementById('pint-status');
+
+// ── API helpers ───────────────────────────────────────────────────────────────
+async function pintFetch(path, token) {
+  const tk = token || pintToken;
+  let res;
+  try {
+    res = await fetch('https://api.pinterest.com/v5' + path, {
+      headers: { 'Authorization': 'Bearer ' + tk }
+    });
+  } catch(e) {
+    throw new Error('network — try opening via localhost (python -m http.server)');
+  }
+  if (res.status === 401) throw new Error('invalid token');
+  if (!res.ok) throw new Error('API ' + res.status);
+  return res.json();
+}
+
+async function fetchBoards(token) {
+  const data = await pintFetch('/boards?page_size=50', token);
+  return data.items || [];
+}
+
+async function fetchBoardPins(boardId) {
+  let bookmark = null, pins = [];
+  do {
+    const url = '/boards/' + boardId
+      + '/pins?page_size=50&fields=id,title,description,note,media,link'
+      + (bookmark ? '&bookmark=' + encodeURIComponent(bookmark) : '');
+    const data = await pintFetch(url);
+    pins = pins.concat(data.items || []);
+    bookmark = data.bookmark || null;
+  } while (bookmark && pins.length < 300);
+  return pins;
+}
+
+function pinToItem(pin) {
+  const imageUrl =
+    pin.media?.images?.['236x']?.url ||
+    pin.media?.images?.['150x150']?.url || null;
+  return {
+    id:       'pin_' + pin.id,
+    title:    pin.title || (pin.note || '').slice(0, 65) || 'Pinterest pin',
+    body:     pin.description || pin.note || '',
+    tags:     ['pinterest'],
+    imageUrl,
+    link:     pin.link || null,
+    pos:      randomArchivePos(),
+    source:   'pinterest',
+  };
+}
+
+// ── Sync ──────────────────────────────────────────────────────────────────────
+async function syncPinterest(statusEl) {
+  if (!pintToken || !pintBoards.length) return;
+  if (statusEl) statusEl.textContent = 'syncing…';
+  let total = 0;
+  try {
+    for (const boardId of pintBoards) {
+      const pins = await fetchBoardPins(boardId);
+      for (const pin of pins) {
+        if (pintSyncedIds.has(pin.id)) continue;
+        pintSyncedIds.add(pin.id);
+        const item = pinToItem(pin);
+        archiveItems.push(item);
+        createOrb(item);
+        total++;
+      }
+    }
+    if (total) {
+      saveItems();
+      localStorage.setItem(P_SYNCED_KEY, JSON.stringify([...pintSyncedIds]));
+    }
+    if (statusEl) {
+      statusEl.textContent = total
+        ? '✦ ' + total + ' new pin' + (total > 1 ? 's' : '') + ' placed in forest'
+        : 'already up to date';
+      setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3500);
+    }
+  } catch(e) {
+    if (statusEl) statusEl.textContent = e.message;
+  }
+}
+
+// ── Board list UI ─────────────────────────────────────────────────────────────
+function renderBoardList(boards) {
+  pintBoardList.innerHTML = '';
+  boards.forEach(board => {
+    const label = document.createElement('label');
+    label.className = 'pint-board';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.value = board.id;
+    cb.checked = pintBoards.includes(board.id);
+    cb.addEventListener('change', () => {
+      pintBoards = cb.checked
+        ? [...new Set([...pintBoards, board.id])]
+        : pintBoards.filter(id => id !== board.id);
+      localStorage.setItem(P_BOARDS_KEY, JSON.stringify(pintBoards));
+    });
+    const span = document.createElement('span');
+    span.textContent = board.name;
+    label.appendChild(cb); label.appendChild(span);
+    pintBoardList.appendChild(label);
+  });
+}
+
+function showConnectedUI(boards) {
+  pintSetupSec.style.display  = 'none';
+  pintBoardsSec.style.display = 'block';
+  pintBtn.classList.add('connected');
+  renderBoardList(boards);
+}
+
+function showDisconnectedUI() {
+  pintSetupSec.style.display  = 'block';
+  pintBoardsSec.style.display = 'none';
+  pintBtn.classList.remove('connected');
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.pint-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.pint-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.pint-tabpane').forEach(p => p.style.display = 'none');
+    tab.classList.add('active');
+    document.getElementById('pint-tab-' + tab.dataset.tab).style.display = 'block';
+  });
+});
+
+// ── File import ───────────────────────────────────────────────────────────────
+const pintDropzone   = document.getElementById('pint-dropzone');
+const pintFileInput  = document.getElementById('pint-file-input');
+const pintImpStatus  = document.getElementById('pint-import-status');
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim());
+  return lines.slice(1).map(line => {
+    // Handle quoted fields
+    const vals = []; let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; }
+      else if (c === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
+      else cur += c;
+    }
+    vals.push(cur.trim());
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = (vals[i] || '').replace(/^"|"$/g, ''); });
+    return obj;
+  });
+}
+
+function importPinsFromData(rows) {
+  const importStatus = document.getElementById('pint-import-status');
+  let added = 0, skipped = 0;
+  const existingIds = new Set(archiveItems.map(i => i.id));
+
+  for (const row of rows) {
+    // Normalise field names across different export formats
+    const rawId    = row.id || row['Pin ID'] || row.pin_id || row.URL || (Date.now() + Math.random());
+    const itemId   = 'pin_' + String(rawId).replace(/\W/g, '').slice(-14);
+    if (existingIds.has(itemId)) { skipped++; continue; }
+
+    const imageUrl = row.imageUrl || row['Image URL'] || row.image_url
+                  || row['Media URL'] || row.image || row.media || null;
+    const title    = (row.title || row.Title || row.Note || row.note
+                  || row.Description || '').slice(0, 80) || 'Pinterest pin';
+    const body     = row.description || row.Description || row.Note || row.note || '';
+    const board    = row.Board || row.board || row.board_name || row['Board Name'] || '';
+    const tags     = ['pinterest', ...(board ? [board.toLowerCase().replace(/\s+/g,'-')] : [])];
+
+    const item = {
+      id: itemId, title, body, tags, imageUrl,
+      link: row.link || row.Link || row.URL || null,
+      pos:  randomArchivePos(),
+      source: 'pinterest-import',
+    };
+    archiveItems.push(item);
+    existingIds.add(itemId);
+    createOrb(item);
+    added++;
+  }
+
+  if (added) saveItems();
+  return { added, skipped };
+}
+
+function handlePintFile(file) {
+  if (!file) return;
+  pintImpStatus.textContent = 'reading…';
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      let rows = [];
+      if (file.name.endsWith('.csv')) {
+        rows = parseCSV(e.target.result);
+      } else {
+        const data = JSON.parse(e.target.result);
+        // Handle nested formats: { pins: [...] } or flat array
+        rows = Array.isArray(data) ? data
+             : data.pins   ? data.pins
+             : data.items  ? data.items
+             : Object.values(data).find(v => Array.isArray(v)) || [];
+      }
+      const { added, skipped } = importPinsFromData(rows);
+      pintImpStatus.textContent = added
+        ? `✦ ${added} pin${added > 1 ? 's' : ''} placed in forest${skipped ? ' · ' + skipped + ' already here' : ''}`
+        : skipped ? 'all pins already in forest' : 'no pins found in file';
+    } catch(err) {
+      pintImpStatus.textContent = 'could not read file: ' + err.message;
+    }
+  };
+  reader.readAsText(file);
+}
+
+pintDropzone.addEventListener('click', () => pintFileInput.click());
+pintFileInput.addEventListener('change', e => handlePintFile(e.target.files[0]));
+
+pintDropzone.addEventListener('dragover', e => { e.preventDefault(); pintDropzone.classList.add('drag-over'); });
+pintDropzone.addEventListener('dragleave', () => pintDropzone.classList.remove('drag-over'));
+pintDropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  pintDropzone.classList.remove('drag-over');
+  handlePintFile(e.dataTransfer.files[0]);
+});
+
+// ── Event wiring ──────────────────────────────────────────────────────────────
+pintBtn.addEventListener('click', () => pintModal.classList.add('visible'));
+
+['pint-close1','pint-close2','pint-close3'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click', () => pintModal.classList.remove('visible'));
+});
+
+pintConnBtn.addEventListener('click', async () => {
+  const token = pintTokenInp.value.trim();
+  if (!token) { pintTokenInp.style.borderColor = 'rgba(220,80,80,0.7)'; return; }
+  pintConnBtn.disabled = true; pintConnBtn.textContent = 'connecting…';
+  try {
+    const boards = await fetchBoards(token);
+    pintToken = token;
+    localStorage.setItem(P_TOKEN_KEY, token);
+    pintStatus.textContent = '';
+    showConnectedUI(boards);
+  } catch(e) {
+    pintStatus.textContent = e.message;
+  } finally {
+    pintConnBtn.disabled = false; pintConnBtn.textContent = 'connect';
+  }
+});
+
+pintDisconBtn.addEventListener('click', () => {
+  pintToken = ''; pintBoards = []; pintSyncedIds = new Set();
+  [P_TOKEN_KEY, P_BOARDS_KEY, P_SYNCED_KEY].forEach(k => localStorage.removeItem(k));
+  pintTokenInp.value = ''; pintStatus.textContent = '';
+  showDisconnectedUI();
+});
+
+pintSyncBtn.addEventListener('click', () => syncPinterest(pintStatus));
+
+// ── Auto-sync on load ─────────────────────────────────────────────────────────
+if (pintToken && pintBoards.length) {
+  setTimeout(() => syncPinterest(null), 1800);
+  setInterval(() => syncPinterest(null), P_SYNC_MS);
+}
+
+// Mark button if already connected
+if (pintToken) pintBtn.classList.add('connected');
+
 animate();
 
 // ═══════════════════════════════════════════════════════════════════════════════
